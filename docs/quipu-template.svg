@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="380mm" height="80mm" viewBox="0 0 380 80">
+  <title>Quipu v1 knot-position template</title>
+  <desc>
+    Print at 100 percent. Place a pendant horizontally with its attachment
+    datum at zero. Knot bands are centered at 8, 18, and 28 centimeters.
+  </desc>
+  <style>
+    text { font-family: sans-serif; fill: #111; }
+    .label { font-size: 5px; font-weight: bold; }
+    .note { font-size: 3.5px; }
+    .tick { stroke: #111; stroke-width: 0.5; }
+    .guide { stroke: #111; stroke-width: 0.8; }
+    .edge { stroke: #555; stroke-width: 0.35; stroke-dasharray: 2 2; }
+  </style>
+
+  <rect x="0.5" y="0.5" width="379" height="79" fill="white"
+        stroke="#111" stroke-width="0.5"/>
+  <text x="10" y="8" class="label">Quipu wallet v1 — print at 100%</text>
+  <text x="370" y="8" class="note" text-anchor="end">
+    Verify the 10 cm scale before use
+  </text>
+
+  <line x1="10" y1="42" x2="370" y2="42" class="guide"/>
+  <line x1="10" y1="34" x2="10" y2="50" class="tick"/>
+  <text x="10" y="57" class="note" text-anchor="middle">attachment datum</text>
+
+  <rect x="70" y="24" width="40" height="36" fill="#d7e8ff"
+        stroke="#4d79a8" stroke-width="0.4"/>
+  <line x1="90" y1="20" x2="90" y2="64" class="tick"/>
+  <text x="90" y="18" class="label" text-anchor="middle">HUNDREDS</text>
+  <text x="90" y="69" class="note" text-anchor="middle">6–10 cm; center 8 cm</text>
+
+  <rect x="170" y="24" width="40" height="36" fill="#fff1bd"
+        stroke="#a6831d" stroke-width="0.4"/>
+  <line x1="190" y1="20" x2="190" y2="64" class="tick"/>
+  <text x="190" y="18" class="label" text-anchor="middle">TENS</text>
+  <text x="190" y="69" class="note" text-anchor="middle">16–20 cm; center 18 cm</text>
+
+  <rect x="270" y="24" width="40" height="36" fill="#ffd9bd"
+        stroke="#a85c26" stroke-width="0.4"/>
+  <line x1="290" y1="20" x2="290" y2="64" class="tick"/>
+  <text x="290" y="18" class="label" text-anchor="middle">ONES</text>
+  <text x="290" y="69" class="note" text-anchor="middle">26–30 cm; center 28 cm</text>
+
+  <line x1="10" y1="75" x2="110" y2="75" class="guide"/>
+  <line x1="10" y1="72" x2="10" y2="78" class="tick"/>
+  <line x1="110" y1="72" x2="110" y2="78" class="tick"/>
+  <text x="60" y="74" class="note" text-anchor="middle">10 cm check scale</text>
+
+  <line x1="110" y1="34" x2="110" y2="50" class="edge"/>
+  <line x1="210" y1="34" x2="210" y2="50" class="edge"/>
+  <line x1="310" y1="34" x2="310" y2="50" class="edge"/>
+  <text x="340" y="36" class="note" text-anchor="middle">tail ≥ 6 cm</text>
+  <text x="340" y="48" class="note" text-anchor="middle">
+    0 none · 1 figure-eight · 2–9 long knot
+  </text>
+</svg>

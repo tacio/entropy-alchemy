@@ -4,13 +4,14 @@
 
 Entropy Alchemy explores reversible ways to turn the abstract information
 behind a BIP39 mnemonic into tangible arrangements of familiar objects: card
-decks today, and potentially chessboards, quipus, knots, tiles, or other media
-in the future.
+decks, chessboards, quipu-inspired knots, and potentially other media in the
+future.
 
 The implemented experiments encode the 128 bits of entropy behind a 12-word
-English BIP39 mnemonic into either the ordering of a standard 52-card deck or
-the arrangement and orientation of pieces on a chessboard. Both codecs decode
-their exact physical representation back into the original mnemonic.
+English BIP39 mnemonic into the ordering of a standard 52-card deck, the
+arrangement and orientation of pieces on a chessboard, or byte values tied on
+colored pendant cords. Each codec decodes its exact physical representation
+back into the original mnemonic.
 
 > [!CAUTION]
 > This project is unaudited experimental software. Its representations are
@@ -24,7 +25,7 @@ their exact physical representation back into the original mnemonic.
 | --- | --- | --- |
 | Standard card deck | Implemented | Encode entropy in a permutation of 52 cards |
 | Chessboard | Implemented | Encode entropy in the placement and orientation of 32 pieces |
-| Quipu or knots | Concept | Encode entropy through discrete knot types and positions |
+| Quipu-inspired knots | Implemented | Encode byte values through decimal knot types and positions |
 
 Each experiment should define a deterministic, reversible, versioned format
 with validation and published test vectors. The media are different; the
@@ -54,6 +55,18 @@ standard count gives
 `2,682,210,745,960,470,404,760,802,361,093,493,020,497,436,168,745`
 states, or about 160.876 bits. Chess format v1 uses 160 of those bits for
 entropy, identification, versioning, and an integrity tag.
+
+## Why a quipu-inspired format can hold a mnemonic
+
+Quipu format v1 uses 23 pendant cords. Each cord stores one byte as a decimal
+value from `000` through `255`, with separate hundreds, tens, and ones knot
+zones. Three cords identify and version the format, sixteen store the BIP39
+entropy, and four store an integrity tag. Color and spacing make missing or
+reordered cords easier to notice but do not carry wallet data.
+
+This is a new physical encoding inspired by the documented decimal structure
+of numerical khipus. It is not an authentic reconstruction or a claim to have
+decoded historical narrative khipus.
 
 ## Requirements and setup
 
@@ -132,6 +145,34 @@ board = mnemonic_to_board(mnemonic)
 recovered = board_to_mnemonic(board)
 ```
 
+## Encode and decode quipu cord values
+
+Encode a valid mnemonic as 23 decimal cord values:
+
+```bash
+.venv/bin/python main.py encode quipu
+```
+
+The command prints six lines corresponding to the physical cord blocks:
+the three-cord header, four groups of four entropy cords, and the four-cord
+integrity tag. Values are padded to three decimal digits.
+
+Recover the mnemonic by entering all 23 values in start-to-finish order:
+
+```bash
+.venv/bin/python main.py decode quipu
+```
+
+Input accepts padded or unpadded decimal values separated by spaces, commas,
+or newlines. Library callers can use the direct APIs:
+
+```python
+from quipu_wallet import mnemonic_to_quipu, quipu_to_mnemonic
+
+cords = mnemonic_to_quipu(mnemonic)
+recovered = quipu_to_mnemonic(cords)
+```
+
 ## Card-deck format v1
 
 Cards use bridge order as the canonical starting deck: clubs, diamonds,
@@ -176,6 +217,28 @@ The shorter chess integrity tag reflects the medium's tighter capacity. It
 detects accidental corruption with high probability but does not authenticate
 the board.
 
+## Quipu format v1
+
+Quipu cords are read from the loop-marked start of the primary cord toward its
+double-stopper finish. The canonical block sizes are `3 | 4 | 4 | 4 | 4 | 4`.
+
+| Field | Cords | Purpose |
+| --- | ---: | --- |
+| Magic | 2 | ASCII `QW`, decimal `081 087` |
+| Version | 1 | Currently `001` |
+| BIP39 entropy | 16 | Original mnemonic entropy, one byte per cord |
+| Integrity tag | 4 | Truncated SHA-256 over a domain tag and entropy |
+
+Within a cord, the hundreds, tens, and ones digit zones are 8, 18, and 28 cm
+below the attachment. Zero is an empty zone, one is a figure-eight knot, and
+digits two through nine are long knots with that many visible turns. This
+compact use of digit knots in every zone is a deliberate modern adaptation.
+
+The canonical color cycle is white, yellow, orange, and pink, reset at every
+block. Colors are redundant: decoding depends only on cord order and knots.
+See the complete [format and construction guide](docs/quipu-format-v1.md) and
+the [printable knot-position template](docs/quipu-template.svg).
+
 ## Physical handling
 
 Before relying on any experimental backup, perform a complete recovery using a
@@ -191,24 +254,29 @@ For chess, fix White's side at the bottom, use a standard board with `a1` dark,
 and preserve every occupied square and required piece orientation. The grid is
 not a legal chess position and must not be rearranged for play or display.
 
+For quipu cords, preserve the start marker, six blocks, cord order, and all
+knot positions and turn counts. Keep the artifact loosely rolled, dry, dark,
+and away from heat: nylon and polyester can melt, and color is not a substitute
+for the structural reading order.
+
 ## Development
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m compileall -q deck_wallet.py chess_wallet.py main.py tests
+.venv/bin/python -m compileall -q deck_wallet.py chess_wallet.py quipu_wallet.py main.py tests
 ```
 
 The English 2,048-word list is vendored from the MIT-licensed
 [BIP39 specification](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki)
 and its [official wordlist](https://github.com/bitcoin/bips/blob/master/bip-0039/english.txt).
-The fixed deck test vector makes accidental format changes visible.
+The fixed golden vectors make accidental format changes visible.
 
 ## Roadmap
 
 1. Establish a shared codec interface and format registry so every experiment
    follows the same encode, decode, validation, and versioning conventions.
-2. Prototype quipu representations with explicit reading order, capacity
-   calculations, and realistic handling constraints.
+2. Build and independently transcribe physical quipu prototypes to validate
+   knot spacing, turn-count readability, and handling guidance.
 3. Search for checksum-valid card repair candidates after one swapped or
    misplaced card, without applying a repair automatically.
 4. Explore multi-artifact formats for 24-word mnemonics and separately

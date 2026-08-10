@@ -6,6 +6,12 @@ import sys
 
 from chess_wallet import board_to_mnemonic, mnemonic_to_board, parse_board
 from deck_wallet import deck_to_mnemonic, mnemonic_to_deck, parse_cards
+from quipu_wallet import (
+    format_quipu,
+    mnemonic_to_quipu,
+    parse_quipu,
+    quipu_to_mnemonic,
+)
 
 
 def _read_secret(prompt: str) -> str:
@@ -23,11 +29,13 @@ def build_parser() -> argparse.ArgumentParser:
     encode_media = encode_parser.add_subparsers(dest="medium", required=True)
     encode_media.add_parser("deck", help="print an ordered 52-card deck")
     encode_media.add_parser("chess", help="print an oriented 8x8 chessboard")
+    encode_media.add_parser("quipu", help="print 23 decimal cord values")
 
     decode_parser = subparsers.add_parser("decode", help="decode a physical medium")
     decode_media = decode_parser.add_subparsers(dest="medium", required=True)
     decode_media.add_parser("deck", help="read an ordered 52-card deck")
     decode_media.add_parser("chess", help="read an oriented 8x8 chessboard")
+    decode_media.add_parser("quipu", help="read 23 decimal cord values")
     return parser
 
 
@@ -40,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
             mnemonic = _read_secret("12-word English BIP39 mnemonic: ")
             if args.medium == "deck":
                 print(" ".join(mnemonic_to_deck(mnemonic)))
-            else:
+            elif args.medium == "chess":
                 board = mnemonic_to_board(mnemonic)
                 print(
                     "\n".join(
@@ -48,12 +56,17 @@ def main(argv: list[str] | None = None) -> int:
                         for start in range(0, 64, 8)
                     )
                 )
+            else:
+                print(format_quipu(mnemonic_to_quipu(mnemonic)))
         elif args.medium == "deck":
             card_text = _read_secret("52 cards in order: ")
             print(deck_to_mnemonic(parse_cards(card_text)))
-        else:
+        elif args.medium == "chess":
             board_text = _read_secret("64 chessboard cells, ranks 8 through 1: ")
             print(board_to_mnemonic(parse_board(board_text)))
+        else:
+            quipu_text = _read_secret("23 cord values from start to finish: ")
+            print(quipu_to_mnemonic(parse_quipu(quipu_text)))
     except (TypeError, ValueError, RuntimeError) as exc:
         parser.exit(2, f"error: {exc}\n")
     return 0
