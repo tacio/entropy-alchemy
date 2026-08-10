@@ -7,10 +7,10 @@ behind a BIP39 mnemonic into tangible arrangements of familiar objects: card
 decks today, and potentially chessboards, quipus, knots, tiles, or other media
 in the future.
 
-The first implemented experiment is the original **Deck Wallet** codec. It
-encodes the 128 bits of entropy behind a 12-word English BIP39 mnemonic into
-the ordering of a standard 52-card deck, then decodes that exact ordering back
-into the original mnemonic.
+The implemented experiments encode the 128 bits of entropy behind a 12-word
+English BIP39 mnemonic into either the ordering of a standard 52-card deck or
+the arrangement and orientation of pieces on a chessboard. Both codecs decode
+their exact physical representation back into the original mnemonic.
 
 > [!CAUTION]
 > This project is unaudited experimental software. Its representations are
@@ -23,7 +23,7 @@ into the original mnemonic.
 | Medium | Status | Idea |
 | --- | --- | --- |
 | Standard card deck | Implemented | Encode entropy in a permutation of 52 cards |
-| Chessboard | Concept | Encode entropy through a defined arrangement of pieces |
+| Chessboard | Implemented | Encode entropy in the placement and orientation of 32 pieces |
 | Quipu or knots | Concept | Encode entropy through discrete knot types and positions |
 
 Each experiment should define a deterministic, reversible, versioned format
@@ -42,6 +42,19 @@ This project uses “mnemonic entropy” precisely. A BIP39-derived binary seed 
 512 bits and does not fit in one deck. An optional BIP39 passphrase is also not
 stored; it must be backed up separately.
 
+## Why a chessboard can hold a mnemonic
+
+One colored 16-piece chess set is not enough: even allowing missing pieces and
+the specified orientations, ordinary indistinguishable pieces provide only
+about 84.13 bits of state. The chess codec therefore uses both colored sides
+of a standard 32-piece set.
+
+Across an 8x8 board, allowing each piece type to range from absent through its
+standard count gives
+`2,682,210,745,960,470,404,760,802,361,093,493,020,497,436,168,745`
+states, or about 160.876 bits. Chess format v1 uses 160 of those bits for
+entropy, identification, versioning, and an integrity tag.
+
 ## Requirements and setup
 
 Runtime use requires Python 3.10 or newer and no third-party packages. For
@@ -57,7 +70,7 @@ python -m venv .venv
 Encode a valid 12-word English BIP39 mnemonic:
 
 ```bash
-.venv/bin/python main.py encode
+.venv/bin/python main.py encode deck
 ```
 
 The terminal prompt hides the mnemonic. The command prints 52 card tokens such
@@ -68,7 +81,7 @@ and ace is `A`.
 Recover the mnemonic from a deck:
 
 ```bash
-.venv/bin/python main.py decode
+.venv/bin/python main.py decode deck
 ```
 
 Enter all cards in top-to-bottom order, separated by spaces, commas, or newlines.
@@ -83,6 +96,40 @@ from deck_wallet import deck_to_mnemonic, mnemonic_to_deck
 
 deck = mnemonic_to_deck(mnemonic)
 recovered = deck_to_mnemonic(deck)
+```
+
+## Encode and decode a chessboard
+
+Encode a valid mnemonic as an oriented chessboard:
+
+```bash
+.venv/bin/python main.py encode chess
+```
+
+The output is an eight-row grid in standard display order: `a8` through `h8`
+on the first row, down to `a1` through `h1` on the last. A dot (`.`) is an
+empty square. Pieces use a color and type, such as `WP` for a white pawn or
+`BQ` for a black queen.
+
+Knights and bishops require an orientation suffix chosen from `N`, `E`, `S`,
+and `W`, for example `WN:N` or `BB:W`. Kings use `N` or `E` for their two
+orientation axes: `N` represents the equivalent north/south orientations and
+`E` represents east/west. Pawns, rooks, and queens have no orientation suffix.
+
+Recover the mnemonic by entering all 64 cells in the same order:
+
+```bash
+.venv/bin/python main.py decode chess
+```
+
+Input is case-insensitive and may use spaces, commas, or newlines. Library
+callers can use the direct APIs:
+
+```python
+from chess_wallet import board_to_mnemonic, mnemonic_to_board
+
+board = mnemonic_to_board(mnemonic)
+recovered = board_to_mnemonic(board)
 ```
 
 ## Card-deck format v1
@@ -104,6 +151,31 @@ not authenticate or conceal the deck. Decoding rejects missing, duplicate, or
 unknown cards, unsupported versions, malformed metadata, and checksum failures.
 Decks made by the earlier salt-based experiment are intentionally incompatible.
 
+## Chessboard format v1
+
+White and black pieces are distinct, but duplicate pieces of the same color
+and type are not individually marked. Boards are ranked deterministically by
+piece type, presence count, square combination, and orientation. The 160-bit
+payload is mapped injectively across the slightly larger physical state space;
+consequently, not every syntactically valid chess arrangement is a v1 codeword.
+
+The canonical type order is `WP, WR, WN, WB, WQ, WK, BP, BR, BN, BB, BQ, BK`.
+Counts are considered from the standard maximum down to zero; square
+combinations are lexicographic in grid order; and orientation order is
+`N, E, S, W` or `N, E` for kings. If `p` is the payload, `N` is the physical
+state count above, and `M = 2^160`, its board rank is `floor(p * N / M)`.
+
+| Field | Bits | Purpose |
+| --- | ---: | --- |
+| BIP39 entropy | 128 | Original mnemonic entropy |
+| Magic | 8 | `C` chess-format marker |
+| Version | 8 | Currently `1` |
+| Integrity tag | 16 | Truncated SHA-256 over a domain tag and entropy |
+
+The shorter chess integrity tag reflects the medium's tighter capacity. It
+detects accidental corruption with high probability but does not authenticate
+the board.
+
 ## Physical handling
 
 Before relying on any experimental backup, perform a complete recovery using a
@@ -115,11 +187,15 @@ For cards, record which end of the deck is the top and never shuffle it. The
 ordered deck is equivalent to the mnemonic; future physical codecs must make
 the same risk explicit for their respective artifacts.
 
+For chess, fix White's side at the bottom, use a standard board with `a1` dark,
+and preserve every occupied square and required piece orientation. The grid is
+not a legal chess position and must not be rearranged for play or display.
+
 ## Development
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m compileall -q deck_wallet.py main.py tests
+.venv/bin/python -m compileall -q deck_wallet.py chess_wallet.py main.py tests
 ```
 
 The English 2,048-word list is vendored from the MIT-licensed
@@ -131,8 +207,8 @@ The fixed deck test vector makes accidental format changes visible.
 
 1. Establish a shared codec interface and format registry so every experiment
    follows the same encode, decode, validation, and versioning conventions.
-2. Prototype chessboard and quipu representations with explicit reading order,
-   capacity calculations, and realistic handling constraints.
+2. Prototype quipu representations with explicit reading order, capacity
+   calculations, and realistic handling constraints.
 3. Search for checksum-valid card repair candidates after one swapped or
    misplaced card, without applying a repair automatically.
 4. Explore multi-artifact formats for 24-word mnemonics and separately

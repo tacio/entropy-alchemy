@@ -167,7 +167,7 @@ def test_payload_uses_exactly_225_bits_at_most():
 
 def test_cli_round_trip_over_stdin():
     encode = subprocess.run(
-        [sys.executable, "main.py", "encode"],
+        [sys.executable, "main.py", "encode", "deck"],
         cwd=PROJECT_ROOT,
         input=ZERO_MNEMONIC,
         text=True,
@@ -178,7 +178,7 @@ def test_cli_round_trip_over_stdin():
     assert encode.stdout.split() == ZERO_DECK
 
     decode = subprocess.run(
-        [sys.executable, "main.py", "decode"],
+        [sys.executable, "main.py", "decode", "deck"],
         cwd=PROJECT_ROOT,
         input=encode.stdout,
         text=True,
@@ -191,7 +191,7 @@ def test_cli_round_trip_over_stdin():
 
 def test_cli_reports_invalid_input_without_traceback():
     result = subprocess.run(
-        [sys.executable, "main.py", "encode"],
+        [sys.executable, "main.py", "encode", "deck"],
         cwd=PROJECT_ROOT,
         input="not a mnemonic",
         text=True,
